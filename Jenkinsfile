@@ -11,7 +11,7 @@ pipeline {
         ECR_REGISTRY =
             "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
 
-        ECR_REPOSITORY = 'nodejs-app'
+        ECR_REPOSITORY = 'nodeapplication'
 
         EKS_CLUSTER = 'netflix-cluster'
 
