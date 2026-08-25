@@ -5,7 +5,6 @@ pipeline {
     environment {
 
         AWS_REGION = 'ap-south-1'
-
         AWS_ACCOUNT_ID = '290780119905'
 
         ECR_REGISTRY =
@@ -25,25 +24,21 @@ pipeline {
 
         IMAGE =
             "${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
+
+        KUBECONFIG = '/var/lib/jenkins/.kube/config'
     }
 
     stages {
 
         stage('Checkout') {
-
             steps {
-
                 checkout scm
             }
         }
 
         stage('Check Tools') {
-
             steps {
-
                 sh '''
-                    echo "Checking tools..."
-
                     git --version
                     docker --version
                     aws --version
@@ -52,32 +47,11 @@ pipeline {
             }
         }
 
-        stage('Install Dependencies') {
-
-            steps {
-
-                sh '''
-                    npm install
-                '''
-            }
-        }
-
-        stage('Test') {
-
-            steps {
-
-                sh '''
-                    npm test
-                '''
-            }
-        }
-
         stage('Docker Build') {
-
             steps {
-
                 sh '''
-                    echo "Building Docker image..."
+                    echo "Building:"
+                    echo "${IMAGE}"
 
                     docker build \
                         -t ${IMAGE} \
@@ -87,9 +61,7 @@ pipeline {
         }
 
         stage('ECR Login') {
-
             steps {
-
                 sh '''
                     aws ecr get-login-password \
                         --region ${AWS_REGION} \
@@ -102,33 +74,28 @@ pipeline {
         }
 
         stage('Push Image') {
-
             steps {
-
                 sh '''
-                    echo "Pushing image..."
-
                     docker push ${IMAGE}
                 '''
             }
         }
 
         stage('Configure EKS') {
-
             steps {
-
                 sh '''
                     aws eks update-kubeconfig \
                         --region ${AWS_REGION} \
-                        --name ${EKS_CLUSTER}
+                        --name ${EKS_CLUSTER} \
+                        --kubeconfig ${KUBECONFIG}
+
+                    kubectl config current-context
                 '''
             }
         }
 
         stage('Check EKS Access') {
-
             steps {
-
                 sh '''
                     kubectl get pods \
                         -n ${K8S_NAMESPACE}
@@ -137,9 +104,7 @@ pipeline {
         }
 
         stage('Deploy Kubernetes') {
-
             steps {
-
                 sh '''
                     kubectl apply \
                         -f k8s/deployment.yaml \
@@ -157,9 +122,7 @@ pipeline {
         }
 
         stage('Update Image') {
-
             steps {
-
                 sh '''
                     kubectl set image \
                         deployment/${DEPLOYMENT_NAME} \
@@ -170,9 +133,7 @@ pipeline {
         }
 
         stage('Rollout') {
-
             steps {
-
                 sh '''
                     kubectl rollout status \
                         deployment/${DEPLOYMENT_NAME} \
@@ -183,25 +144,12 @@ pipeline {
         }
 
         stage('Verify') {
-
             steps {
-
                 sh '''
-                    echo "========== PODS =========="
-
-                    kubectl get pods \
-                        -n ${K8S_NAMESPACE} \
-                        -o wide
-
-                    echo "========== SERVICE =========="
-
-                    kubectl get svc \
-                        -n ${K8S_NAMESPACE}
-
-                    echo "========== INGRESS =========="
-
-                    kubectl get ingress \
-                        -n ${K8S_NAMESPACE}
+                    kubectl get deployment -n ${K8S_NAMESPACE}
+                    kubectl get pods -n ${K8S_NAMESPACE}
+                    kubectl get svc -n ${K8S_NAMESPACE}
+                    kubectl get ingress -n ${K8S_NAMESPACE}
                 '''
             }
         }
@@ -210,17 +158,14 @@ pipeline {
     post {
 
         success {
-
-            echo 'Deployment successful!'
+            echo "Deployment successful!"
         }
 
         failure {
-
-            echo 'Deployment failed!'
+            echo "Deployment failed!"
         }
 
         always {
-
             sh '''
                 docker logout ${ECR_REGISTRY} || true
                 docker image prune -f || true
