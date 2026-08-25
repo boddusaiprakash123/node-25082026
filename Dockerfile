@@ -1,5 +1,5 @@
 # Use official Node.js LTS image
-FROM node:20
+FROM node:20-alpine
 
 # Set working directory inside container
 WORKDIR /usr/src/app
@@ -14,8 +14,7 @@ RUN npm install
 COPY . .
 
 # Expose the port your app runs on
-EXPOSE 8080
+EXPOSE 3000
 
 # Start the Node.js app
 CMD ["node", "server.js"]
-

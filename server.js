@@ -57,7 +57,7 @@ app.post("/users", (req, res) => {
 require("./app/routes/tutorial.routes.js")(app);
 
 // set port and start server
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}.`);
 });

@@ -1,8 +1,7 @@
 module.exports = {
-  HOST: "172.16.1.5",           // your DB host
-  PORT: 3306,                   // your DB port
-  USER: "nodeuser",             // your DB username
-  PASSWORD: "NodeUserPass123!", // your DB password
-  DB: "node_mysql_crud"         // your DB name
+  HOST: process.env.DB_HOST,
+  PORT: process.env.DB_PORT || 3306,
+  USER: process.env.DB_USER,
+  PASSWORD: process.env.DB_PASSWORD,
+  DB: process.env.DB_NAME
 };
-
