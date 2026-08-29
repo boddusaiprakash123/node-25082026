@@ -1,10 +1,7 @@
 node {
 
-    environment {
-        DOCKER_IMAGE = "saiprakash305/my-node-app"
-        DOCKER_TAG = "${BUILD_NUMBER}"
-        KUBECONFIG = "/var/lib/jenkins/.kube/config"
-    }
+    def DOCKER_IMAGE = "saiprakash305/my-node-app"
+    def DOCKER_TAG = "${BUILD_NUMBER}"
 
     stage("Git Clone") {
         git(
@@ -23,10 +20,7 @@ node {
     stage("Docker Build") {
         sh 'docker version'
 
-        sh '''
-            docker build \
-            -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
-        '''
+        sh "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} ."
 
         sh 'docker images'
     }
@@ -47,9 +41,7 @@ node {
     }
 
     stage("Push Image to Docker Hub") {
-        sh '''
-            docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
-        '''
+        sh "docker push ${DOCKER_IMAGE}:${DOCKER_TAG}"
     }
 
     stage("Kubernetes Deployment") {
@@ -61,16 +53,9 @@ node {
             kubectl apply -f k8s/secrets.yml -n nodejs-app
         '''
 
-        sh '''
-            kubectl set image deployment/nodejs-app \
-            nodejs-app=${DOCKER_IMAGE}:${DOCKER_TAG} \
-            -n nodejs-app
-        '''
+        sh "kubectl set image deployment/nodejs-app nodejs-app=${DOCKER_IMAGE}:${DOCKER_TAG} -n nodejs-app"
 
-        sh '''
-            kubectl rollout status deployment/nodejs-app \
-            -n nodejs-app
-        '''
+        sh "kubectl rollout status deployment/nodejs-app -n nodejs-app"
     }
 
     stage("Check Deployment") {
