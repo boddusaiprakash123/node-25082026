@@ -19,7 +19,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // simple root route
 app.get("/", (req, res) => {
-  res.json({ message: "Welcome to bezkoder application.# No.1 Yaari#" });
+  res.json({ message: "Welcome to bezkoder application.# Amma-Nanna" });
 });
 
 // GET /users - fetch all users from database
