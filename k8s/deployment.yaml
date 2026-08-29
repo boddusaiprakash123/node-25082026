@@ -27,7 +27,7 @@ spec:
       containers:
         - name: nodejs-app
 
-          image: IMAGE_PLACEHOLDER
+          image: saiprakash305/my-node-app:latest
 
           ports:
             - containerPort: 3000
