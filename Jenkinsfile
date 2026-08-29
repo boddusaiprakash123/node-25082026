@@ -1,5 +1,11 @@
 node {
 
+    environment {
+        DOCKER_IMAGE = "saiprakash305/my-node-app"
+        DOCKER_TAG = "${BUILD_NUMBER}"
+        KUBECONFIG = "/var/lib/jenkins/.kube/config"
+    }
+
     stage("Git Clone") {
         git(
             credentialsId: 'GIT_HUB_CREDENTIALS',
@@ -16,7 +22,12 @@ node {
 
     stage("Docker Build") {
         sh 'docker version'
-        sh 'docker build -t saiprakash305/my-node-app:latest .'
+
+        sh '''
+            docker build \
+            -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
+        '''
+
         sh 'docker images'
     }
 
@@ -27,24 +38,49 @@ node {
                 variable: 'PASSWORD'
             )
         ]) {
-            sh 'echo "$PASSWORD" | docker login -u saiprakash305 --password-stdin'
+            sh '''
+                echo "$PASSWORD" | docker login \
+                -u saiprakash305 \
+                --password-stdin
+            '''
         }
     }
 
     stage("Push Image to Docker Hub") {
-        sh 'docker push saiprakash305/my-node-app:latest'
+        sh '''
+            docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
+        '''
     }
 
     stage("Kubernetes Deployment") {
-        sh 'kubectl apply -f k8s/deployment.yaml'
-        sh 'kubectl apply -f k8s/service.yaml'
-        sh 'kubectl apply -f k8s/ingress.yaml'
-        sh 'kubectl apply -f k8s/secrets.yml'
+
+        sh '''
+            kubectl apply -f k8s/deployment.yaml -n nodejs-app
+            kubectl apply -f k8s/service.yaml -n nodejs-app
+            kubectl apply -f k8s/ingress.yaml -n nodejs-app
+            kubectl apply -f k8s/secrets.yml -n nodejs-app
+        '''
+
+        sh '''
+            kubectl set image deployment/nodejs-app \
+            nodejs-app=${DOCKER_IMAGE}:${DOCKER_TAG} \
+            -n nodejs-app
+        '''
+
+        sh '''
+            kubectl rollout status deployment/nodejs-app \
+            -n nodejs-app
+        '''
     }
 
     stage("Check Deployment") {
-        sh 'kubectl get pods'
-        sh 'kubectl get svc'
-        sh 'kubectl get ingress'
+
+        sh 'kubectl get pods -n nodejs-app'
+
+        sh 'kubectl get deployment -n nodejs-app'
+
+        sh 'kubectl get svc -n nodejs-app'
+
+        sh 'kubectl get ingress -n nodejs-app'
     }
 }
